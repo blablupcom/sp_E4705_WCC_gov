@@ -47,12 +47,10 @@ def validateURL(url):
             count += 1
             r = urllib.urlopen(url)
         sourceFilename = r.headers.get('Content-Disposition')
-        print sourceFilename
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
         else:
             ext = os.path.splitext(url)[1]
-        print ext
         validURL = r.getcode() == 200
         validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
         return validURL, validFiletype
