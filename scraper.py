@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 #### FUNCTIONS 1.2
 
 import requests       # import requests to validate URL
+import urllib
 
 def validateFilename(filename):
     filenameregex = '^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9]+_[0-9][0-9][0-9][0-9]_[0-9QY][0-9]$'
@@ -62,12 +63,12 @@ def validateURL(url):
     #     print ("Error validating URL.")
     #     return False, False
     # try:
-        r = urllib2.urlopen(url)
+        r = urllib.urlopen(url)
         count = 1
         while r.getcode() == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = urllib2.urlopen(url)
+            r = urllib.urlopen(url)
         sourceFilename = r.headers.get('Content-Disposition')
         print sourceFilename
         if sourceFilename:
