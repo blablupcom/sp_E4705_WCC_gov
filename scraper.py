@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 
 #### FUNCTIONS 1.2
 
-import urllib         # import requests to validate URL
+import requests       # import requests to validate URL
 
 def validateFilename(filename):
     filenameregex = '^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9]+_[0-9][0-9][0-9][0-9]_[0-9QY][0-9]$'
@@ -40,18 +40,20 @@ def validateFilename(filename):
 
 def validateURL(url):
     try:
-        r = urllib.urlopen(url)
+        r = requests.get(url, allow_redirects=True, timeout=20)
         count = 1
-        while r.getcode() == 500 and count < 4:
+        while r.status_code == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = urllib.urlopen(url)
+            r = requests.get(url, allow_redirects=True, timeout=20)
         sourceFilename = r.headers.get('Content-Disposition')
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
+        elif r.headers['Content-Type'] == 'text/csv':
+            ext = '.csv'
         else:
             ext = os.path.splitext(url)[1]
-        validURL = r.getcode() == 200
+        validURL = r.status_code == 200
         validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
         return validURL, validFiletype
     except:
@@ -87,7 +89,7 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "E4705_WCC_gov"
-url = "http://www.wakefield.gov.uk/about-the-council/budget-and-spending/payments-to-suppliers"
+url = "https://datamillnorth.org/dataset/wakefield-council-spend-over-500-pounds"
 errors = 0
 data = []
 
@@ -98,27 +100,36 @@ soup = BeautifulSoup(html, "lxml")
 
 #### SCRAPE DATA
 
-block = soup.find('div', attrs = {'id':'ctl00_PlaceHolderMain_ctl00_ctl00_page_container'})
-links = block.findAll('a', href=True)
-for link in links:
-    csvfile = link.text.strip()
-    url = 'http://www.wakefield.gov.uk' + link['href']
-    if not '.pdf' in url:
-        csv_year = csvfile.split('-')[-2].strip()
-        if 'Quarter 4' in csvfile:
-            csvMth = 'Q4'
-        if 'Quarter 3' in csvfile:
-            csvMth = 'Q3'
-        if 'Quarter 2' in csvfile:
-            csvMth = 'Q2'
-        if 'Quarter 1' in csvfile:
+blocks = soup.find_all('div', attrs = {'class':'resource-buttons hidden-sm hidden-xs'})
+for block in blocks:
+    link = block.find('a', href=True)
+    if '.csv' in link['href'] or '.xls' in link['href']:
+        csvfile = link['href']
+        link_text = csvfile.split('/')[-1]
+        if 'q1' in csvfile or 'Q1' in csvfile:
             csvMth = 'Q1'
-        if '15' in csv_year:
-            csv_year = '2015'
-        csvYr = csv_year
+            s_year = re.search('(\d{4})', link_text)
+            if s_year:
+                csvYr = s_year.groups()[0]
+        if 'q2' in csvfile or 'Q2' in csvfile:
+            csvMth = 'Q2'
+            s_year = re.search('(\d{4})', link_text)
+            if s_year:
+                csvYr = s_year.groups()[0]
+        if 'q3' in csvfile or 'Q3' in csvfile:
+            csvMth = 'Q3'
+            s_year = re.search('(\d{4})', link_text)
+            if s_year:
+                csvYr = s_year.groups()[0]
+        if 'q4' in csvfile or 'Q4' in csvfile:
+            csvMth = 'Q4'
+            s_year = re.search('(\d{4})', link_text)
+            if s_year:
+                csvYr = s_year.groups()[0]
+
         csvMth = convert_mth_strings(csvMth.upper())
         todays_date = str(datetime.now())
-        data.append([csvYr, csvMth, url])
+        data.append([csvYr, csvMth, csvfile])
 
 #### STORE DATA 1.0
 
