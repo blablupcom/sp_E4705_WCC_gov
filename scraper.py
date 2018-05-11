@@ -99,10 +99,11 @@ html = urllib2.urlopen(url)
 soup = BeautifulSoup(html, "lxml")
 
 #### SCRAPE DATA
-print soup
+
 blocks = soup.find_all('div', attrs = {'class':'resource-buttons hidden-sm hidden-xs'})
 for block in blocks:
     link = block.find('a', href=True)
+    print link
     if '.csv' in link['href'] or '.xls' in link['href']:
         csvfile = link['href']
         link_text = csvfile.split('/')[-1]
