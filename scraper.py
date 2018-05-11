@@ -2,7 +2,7 @@
 
 #### IMPORTS 1.0
 
-import os
+import os, json
 import re
 import scraperwiki
 import urllib2
@@ -95,17 +95,14 @@ data = []
 
 #### READ HTML 1.0
 
-html = urllib2.urlopen(url)
-soup = BeautifulSoup(html, "lxml")
+html = requests.get(url)
+soup = BeautifulSoup(html.text, "lxml")
 
 #### SCRAPE DATA
-
-blocks = soup.find_all('div', attrs = {'class':'resource-buttons hidden-sm hidden-xs'})
-for block in blocks:
-    link = block.find('a', href=True)
-    print link
-    if '.csv' in link['href'] or '.xls' in link['href']:
-        csvfile = link['href']
+files_dics = json.loads(html.text.split('__INITIAL_STATE__=')[-1].split('}</script>')[0]+'}')['dataset']['resources']
+for files_dic in files_dics.items():
+    if '.csv' in files_dic[1]['url'] or '.xls' in files_dic[1]['url']:
+        csvfile = files_dic[1]['url']
         link_text = csvfile.split('/')[-1]
         if 'q1' in csvfile or 'Q1' in csvfile:
             csvMth = 'Q1'
@@ -127,7 +124,8 @@ for block in blocks:
             s_year = re.search('(\d{4})', link_text)
             if s_year:
                 csvYr = s_year.groups()[0]
-
+        if '3500' in csvYr:
+            csvYr = files_dic[1]['url'].split('-')[-2][-4:]
         csvMth = convert_mth_strings(csvMth.upper())
         todays_date = str(datetime.now())
         data.append([csvYr, csvMth, csvfile])
